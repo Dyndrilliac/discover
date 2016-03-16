@@ -4,6 +4,21 @@ clear
 echo
 echo
 
+# Fix for errors from URLCrazy file tld.rb lines 81,89,91
+# since project is not actively supported.
+
+tlddir=$(locate homophones.rb | sed 's%/[^/]*$%/%')
+cd $tlddir
+
+if [ ! -f tld.rb.bak ]; then
+    cp tld.rb tld.rb.bak
+    cat tld.rb | grep '"bd"=>' -v | grep '"bn"=>' -v | grep '"br"=>' -v > tld_tmp.rb
+    mv tld_tmp.rb tld.rb
+fi
+
+#########################################################
+
+
 if [ -d /pentest ]; then
      echo -e "\e[1;34mUpdating Discover.\e[0m"
      git pull
@@ -48,6 +63,12 @@ if [ ! -f /usr/bin/goofile ]; then
      echo
 fi
 
+if [ ! -f /usr/bin/xmllint ]; then
+     echo -e "\e[1;33mInstalling libxml2-utils.\e[0m"
+     apt-get install -y libxml2-utils
+     echo
+fi
+
 if [ -d /opt/rawr/.git ]; then
      echo -e "\e[1;34mUpdating RAWR.\e[0m"
      cd /opt/rawr/ ; git pull
@@ -67,6 +88,12 @@ fi
 if [ ! -f /usr/bin/xdotool ]; then
      echo -e "\e[1;33mInstalling xdotool.\e[0m"
      apt-get install -y xdotool
+     echo
+fi
+
+if [ ! -f /usr/bin/xml_grep ]; then
+     echo -e "\e[1;33mInstalling xml_grep.\e[0m"
+     apt-get install -y xml-twig-tools
      echo
 fi
 

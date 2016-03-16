@@ -199,27 +199,49 @@ case $choice in
      fi
 
      # Number of tests
-     total=26
+     total=28
 
      echo
      echo $medium
      echo
 
-     echo "dnsrecon                  (1/$total)"
+     echo "ARIN"
+     echo "     Email                (1/$total)"
+     wget -q https://whois.arin.net/rest/pocs\;domain=$domain -O tmp.xml
+     xmllint --format tmp.xml | grep 'handle' | cut -d '>' -f2 | cut -d '<' -f1 | sort -u > zurls.txt
+     xmllint --format tmp.xml | grep 'handle' | cut -d '"' -f2 | sort -u > zhandles.txt
+
+     while read x; do
+          wget -q $x -O tmp2.xml
+          xml_grep 'email' tmp2.xml --text_only >> tmp
+     done < zurls.txt
+
+     grep "@$domain" tmp | tr '[A-Z]' '[a-z]' | sort -u > arin-emails
+     echo "     Names                (2/$total)"
+     while read y; do
+          curl --silent https://whois.arin.net/rest/poc/$y.txt | grep 'Name' >> tmp
+     done < zhandles.txt
+
+     grep -v '@' tmp | sed 's/Name:           //g' | tr '[A-Z]' '[a-z]' | sed 's/\b\(.\)/\u\1/g' | sort -u > arin-names
+
+     rm tmp* z*
+     echo
+
+     echo "dnsrecon                  (3/$total)"
      dnsrecon -d $domain -t goo > tmp
      grep $domain tmp | egrep -v '(Performing|Records Found)' | awk '{print $3 " " $4}' | awk '$2 !~ /[a-z]/' | column -t | sort -u > sub1
      echo
 
-     echo "goofile                   (2/$total)"
+     echo "goofile                   (4/$total)"
 
-       goofile -d $domain -f doc > tmp
-       goofile -d $domain -f docx >> tmp
-       goofile -d $domain -f pdf >> tmp
-       goofile -d $domain -f ppt >> tmp
-       goofile -d $domain -f pptx >> tmp
-       goofile -d $domain -f txt >> tmp
-       goofile -d $domain -f xls >> tmp
-       goofile -d $domain -f xlsx >> tmp
+     goofile -d $domain -f doc > tmp
+     goofile -d $domain -f docx >> tmp
+     goofile -d $domain -f pdf >> tmp
+     goofile -d $domain -f ppt >> tmp
+     goofile -d $domain -f pptx >> tmp
+     goofile -d $domain -f txt >> tmp
+     goofile -d $domain -f xls >> tmp
+     goofile -d $domain -f xlsx >> tmp
 
      grep $domain tmp | grep -v 'Searching in' | grep -Fv '...' | sort > tmp2
 
@@ -230,7 +252,7 @@ case $choice in
      grep '.xls' tmp2 > xls
 
      echo
-     echo "goog-mail                 (3/$total)"
+     echo "goog-mail                 (5/$total)"
      $discover/mods/goog-mail.py $domain | sort -u > tmp
      grep -Fv '..' tmp > tmp2
      # Remove lines that start with a number
@@ -242,9 +264,9 @@ case $choice in
 
      echo
      echo "goohost"
-     echo "     IP                   (4/$total)"
+     echo "     IP                   (6/$total)"
      $discover/mods/goohost.sh -t $domain -m ip >/dev/null
-     echo "     Email                (5/$total)"
+     echo "     Email                (7/$total)"
      $discover/mods/goohost.sh -t $domain -m mail >/dev/null
      cat report-* > tmp
      # Move the second column to the first position
@@ -254,35 +276,35 @@ case $choice in
 
      echo
      echo "theHarvester"
-     echo "     Baidu                (6/$total)"
+     echo "     Baidu                (8/$total)"
      theHarvester -d $domain -b baidu > zbaidu
-     echo "     Bing                 (7/$total)"
+     echo "     Bing                 (9/$total)"
      theHarvester -d $domain -b bing > zbing
-     echo "     Dogpilesearch        (8/$total)"
+     echo "     Dogpilesearch        (10/$total)"
      theHarvester -d $domain -b dogpilesearch > zdogpilesearch
-     echo "     Google               (9/$total)"
+     echo "     Google               (11/$total)"
      theHarvester -d $domain -b google > zgoogle
-     echo "     Google CSE           (10/$total)"
+     echo "     Google CSE           (12/$total)"
      theHarvester -d $domain -b googleCSE > zgoogleCSE
-     echo "     Google+              (11/$total)"
+     echo "     Google+              (13/$total)"
      theHarvester -d $domain -b googleplus > zgoogleplus
-     echo "     Google Profiles	  (12/$total)"
+     echo "     Google Profiles	  (14/$total)"
      theHarvester -d $domain -b google-profiles > zgoogle-profiles
-     echo "     Jigsaw               (13/$total)"
+     echo "     Jigsaw               (15/$total)"
      theHarvester -d $domain -b jigsaw > zjigsaw
-     echo "     LinkedIn             (14/$total)"
+     echo "     LinkedIn             (16/$total)"
      theHarvester -d $domain -b linkedin > zlinkedin
-     echo "     People123            (15/$total)"
+     echo "     People123            (17/$total)"
      theHarvester -d $domain -b people123 > zpeople123
-     echo "     PGP                  (16/$total)"
+     echo "     PGP                  (18/$total)"
      theHarvester -d $domain -b pgp > zpgp
-     echo "     Yahoo                (17/$total)"
+     echo "     Yahoo                (19/$total)"
      theHarvester -d $domain -b yahoo > zyahoo
-     echo "     All                  (18/$total)"
+     echo "     All                  (20/$total)"
      theHarvester -d $domain -b all > zall
      echo
 
-     echo "Metasploit                (19/$total)"
+     echo "Metasploit                (21/$total)"
      msfconsole -x "use auxiliary/gather/search_email_collector; set DOMAIN $domain; run; exit y" > tmp 2>/dev/null
      grep @$domain tmp | awk '{print $2}' | grep -v '%' | grep -Fv '...@' | sort -u > tmp2
      # Change to lower case
@@ -291,7 +313,7 @@ case $choice in
      sed '/^$/d' tmp3 > zmsf
 
      echo
-     echo "URLCrazy                  (20/$total)"
+     echo "URLCrazy                  (22/$total)"
      urlcrazy $domain -o tmp > /dev/null
      # Clean up
      egrep -v '(#|:|\?|RESERVED|Typo Type|URLCrazy)' tmp | sed 's/[A-Z]\{2\},//g' > tmp2
@@ -330,7 +352,8 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
      # Clean up
      sed 's/\..../ /g' tmp10 | sed 's/\.../ /g; s/iii/III/g; s/ii/II/g' > tmp11
      # Capitalize the first letter of every word, print last name then first name
-     sed 's/\b\(.\)/\u\1/g' tmp11 | awk '{print $2", "$1}' | sort -u > names
+     sed 's/\b\(.\)/\u\1/g' tmp11 | awk '{print $2", "$1}' > tmp12
+     cat tmp12 arin-names | sort -u > names
 
      ##############################################################
 
@@ -340,7 +363,8 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
      # Change to lower case
      cat tmp2 | tr '[A-Z]' '[a-z]' > tmp3
      # Clean up
-     egrep -v '(web search|www|xxx)' tmp3 | cut -d ' ' -f2 | sed '/^@/d' | sort -u > emails
+     egrep -v '(web search|www|xxx)' tmp3 | cut -d ' ' -f2 | sed '/^@/d' > tmp4
+     cat tmp4 arin-emails | sort -u > emails
 
      ##############################################################
 
@@ -358,7 +382,7 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
 
      echo
      echo "Whois"
-     echo "     Domain               (21/$total)"
+     echo "     Domain               (23/$total)"
      whois -H $domain > tmp 2>/dev/null
      # Remove leading whitespace
      sed 's/^[ \t]*//' tmp > tmp2
@@ -398,7 +422,7 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
           fi
      done < tmp13 > whois-domain
 
-     echo "     IP 		  (22/$total)"
+     echo "     IP 		  (24/$total)"
      y=$(ping -c1 -w2 $domain | grep 'PING' | cut -d ')' -f1 | cut -d '(' -f2) ; whois -H $y > tmp
      # Remove leading whitespace
      sed 's/^[ \t]*//' tmp > tmp2
@@ -428,7 +452,7 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
      # Remove all empty files
      find -type f -empty -exec rm {} +
 
-     echo "dnssy.com                 (23/$total)"
+     echo "dnssy.com                 (25/$total)"
      wget -q --post-data 'q=$domain&step=1&r=1448215046#3cc723b32910c180bc45aba6c21be6edf4125745' http://www.dnssy.com/report.php -O tmp
      sed -n '/table border/,/\/table/p' tmp > tmp2
      echo "<html>" > tmp3
@@ -445,11 +469,11 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
      s/Your nameservers/Nameservers/g; s/Your NS records at your nameservers are://g; s/Your NS records at your parent nameserver are://g;
      s/Your SOA/SOA/g; s/Your web server/The web server/g; s/Your web server says it is://g' tmp3 > $home/data/$domain/data/config.htm
 
-     echo "ewhois.com                (24/$total)"
+     echo "ewhois.com                (26/$total)"
      wget -q http://www.ewhois.com/$domain/ -O tmp
      cat tmp | grep 'visitors' | cut -d '(' -f1 | cut -d '>' -f2 | grep -v 'OTHER' | column -t | sort -u > sub3
 
-     echo "myipneighbors.net         (25/$total)"
+     echo "myipneighbors.net         (27/$total)"
      wget -q http://www.myipneighbors.net/?s=$domain -O tmp
      grep 'Domains' tmp | sed 's/<\/tr>/\\\n/g' | cut -d '=' -f3,6 | sed 's/" rel=/ /g' | sed 's/" rel//g' | grep -v '/' | column -t | sort -u > sub4
 
@@ -457,7 +481,7 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
      # Remove lines that contain a single word
      sed '/[[:blank:]]/!d' tmp > subdomains
 
-     echo "urlvoid.com               (26/$total)"
+     echo "urlvoid.com               (28/$total)"
      wget -q http://www.urlvoid.com/scan/$domain -O tmp
      sed -n '/Safety Scan Report/,/<\/table>/p' tmp | grep -v 'Safety Scan Report' | sed 's/View more details.../Details/g' > $home/data/$domain/data/black-listed.htm
 
@@ -593,6 +617,10 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
 
      rm debug* emails hosts names squatting sub* tmp* whois* z* doc pdf ppt txt xls 2>/dev/null
 
+     # Screenshots for Robtex graph & Netcraft
+     cutycapt --url="https://www.robtex.com/?dns=$domain&graph=1" --out=$home/data/$domain/images/config.png
+     cutycapt --url="toolbar.netcraft.com/site_report?url=http://www.$domain" --out=$home/data/$domain/images/netcraft.png
+
      echo
      echo $medium
      echo
@@ -609,11 +637,11 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
 
      $web &
      sleep 2
-     $web https://www.virustotal.com/en/domain/$domain/information/ &
-     sleep 1
-     $web https://safeweb.norton.com/report/show?url=$domain &
-     sleep 1
      $web toolbar.netcraft.com/site_report?url=http://www.$domain &
+     sleep 1
+     $web https://dnsdumpster.com &
+     sleep 1
+     $web https://dnsdumpster.com/static/map/$domain.png &
      sleep 1
      $web https://www.google.com/#q=filetype%3Axls+OR+filetype%3Axlsx+site%3A$domain &
      sleep 1
@@ -629,20 +657,23 @@ s/UKRAINE/Ukraine/g; s/UNITED KINGDOM/United Kingdom/g; s/UNITED STATES/United S
      sleep 1
      $web http://www.urlvoid.com/scan/$domain &
      sleep 1
-     arinip=$(ping $domain -c1 | grep -m1 bytes | cut -d "(" -f2 | sed 's:)[^)]*$::')
+     arinip=$(ping $domain -c1 | grep -m1 bytes | cut -d '(' -f2 | sed 's:)[^)]*$::')
      $web https://whois.arin.net/ui/arin.xsl?queryinput=$arinip &
+     sleep 1
+     $web https://whois.arin.net/rest/pocs\;domain=$domain &
      sleep 1
      $web https://connect.data.com/login &
      sleep 1
-     $web pastebin.com/search?cx=013305635491195529773%3A0ufpuq-fpt0\&cof=FORID%3A10\&ie=UTF-8\&q=$company\&sa.x=0\&sa.y=0 &
-     sleep 1
-     $web https://www.robtex.com/#\!dns=$domain &
+     $web https://www.robtex.com/?dns=$domain\&graph=1 &
      sleep 1
      $web https://www.shodan.io/search?query=$domain &
      sleep 1
-     $web http://www.reuters.com/finance/stocks/lookup?searchType=any\&search=$company &
+     companyurl=$( printf "%s\n" "$company" | sed 's/ /%20/g' )
+     $web pastebin.com/search?cx=013305635491195529773%3A0ufpuq-fpt0\&cof=FORID%3A10\&ie=UTF-8\&q=$companyurl\&sa.x=0\&sa.y=0 &
      sleep 1
-     $web https://www.sec.gov/cgi-bin/browse-edgar?company=$company\&owner=exclude\&action=getcompany &
+     $web http://www.reuters.com/finance/stocks/lookup?searchType=any\&search=$companyurl &
+     sleep 1
+     $web https://www.sec.gov/cgi-bin/browse-edgar?company=$companyurl\&owner=exclude\&action=getcompany &
      echo
      echo
      exit
@@ -1232,17 +1263,17 @@ read choice
 
 case $choice in
      1) f_errorOSX
-	 
+
 	 echo -n "Interface to scan: "
 	 read interface
-	
+
      # Check for no answer
      if [[ -z $interface ]]; then
           f_error
      fi
 
 	 arp-scan -l -I $interface | egrep -v '(arp-scan|Interface|packets|Polycom|Unknown)' | awk '{print $1}' | $sip | sed '/^$/d' > $home/data/hosts-arp.txt
-	
+
      echo $medium
      echo
      echo "***Scan complete.***"
