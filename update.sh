@@ -18,7 +18,6 @@ fi
 
 #########################################################
 
-
 if [ -d /pentest ]; then
      echo -e "\e[1;34mUpdating Discover.\e[0m"
      git pull
@@ -57,6 +56,22 @@ else
      echo
 fi
 
+if [ -d /opt/EyeWitness/.git ]; then
+     echo -e "\e[1;34mUpdating EyeWitness.\e[0m"
+     cd /opt/EyeWitness/ ; git pull
+     echo
+else
+     echo -e "\e[1;33mInstalling EyeWitness.\e[0m"
+     git clone https://github.com/ChrisTruncer/EyeWitness.git /opt/EyeWitness
+     /opt/EyeWitness/setup/setup.sh
+fi
+
+if [ ! -f /usr/bin/ssconvert ]; then
+     echo -e "\e[1;33mInstalling gnumeric.\e[0m"
+     apt-get install -y gnumeric
+     echo
+fi
+
 if [ ! -f /usr/bin/goofile ]; then
      echo -e "\e[1;33mInstalling goofile.\e[0m"
      apt-get install -y goofile
@@ -66,6 +81,19 @@ fi
 if [ ! -f /usr/bin/xmllint ]; then
      echo -e "\e[1;33mInstalling libxml2-utils.\e[0m"
      apt-get install -y libxml2-utils
+     echo
+fi
+
+if [ -d /opt/prowl/.git ]; then
+     echo -e "\e[1;34mUpdating Prowl.\e[0m"
+     cd /opt/prowl/ ; git pull
+     echo
+else
+     echo -e "\e[1;33mInstalling Prowl.\e[0m"
+     git clone https://github.com/Pickfordmatt/Prowl /opt/prowl
+     chmod 755 /opt/prowl/prowl.py
+     apt-get install python-pip python-lxml
+     pip install dnspython Beautifulsoup4 Gitpython
      echo
 fi
 
@@ -79,10 +107,17 @@ else
      /opt/rawr/install.sh y
 fi
 
-if [ -f /usr/bin/theharvester ]; then
-     echo -e "\e[1;34mUpdating theHarvester.\e[0m"
-     mv /usr/bin/theharvester /usr/bin/theHarvester
+if [ -d /opt/Responder/.git ]; then
+     echo -e "\e[1;33mRemoving Responder.\e[0m"
+     rm -rf /opt/Responder/
      echo
+fi
+
+if [[  -d /opt/theHarvester/.git ]]; then
+    echo -e "\e[1;33mDeleting theHarvester.\e[0m"
+    rm -rf /opt/theHarvester
+    rm /usr/share/theHarvester
+    echo
 fi
 
 if [ ! -f /usr/bin/xdotool ]; then
@@ -101,3 +136,4 @@ echo -e "\e[1;34mUpdating locate database.\e[0m" ; updatedb
 
 echo
 echo
+
